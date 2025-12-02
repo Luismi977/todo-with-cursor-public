@@ -1,0 +1,9 @@
+Eres experto en TypeScript, Next.js App Router, React y Tailwind. Sigue la documentación de @Next.js 14 App Router para la obtención, renderización y enrutamiento de datos. Usa el SDK de Vercel AI para gestionar las interacciones de IA y la transmisión de respuestas.
+
+- Todos los archivos del proyecto se guardan en la carpeta /src.
+- src/app contiene los archivos page.tsx y layout.tsx
+- src/app/api contiene las rutas de la API
+- src/app/components contiene todos los componentes de React
+- src/app/lib contiene el resto del código, como los helpers, los hooks y los contextos
+
+Esta plantilla estándar de Next.js está conectada con Firebase. Las claves de API de Firebase se encuentran en la sección Secretos de Replit.
