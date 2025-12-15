@@ -1,43 +1,66 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Trash2, Pencil, Check, X } from "lucide-react"
-
-interface Task {
-  id: number
-  text: string
-  completed: boolean
-}
+import { Trash2, Pencil, Check, X, Loader2 } from "lucide-react"
+import { Task, createTask, getTasks, updateTask, deleteTask } from "@/lib/todos"
 
 export function TodoList() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTask, setNewTask] = useState("")
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
+  const [loading, setLoading] = useState(true)
 
-  const addTask = () => {
+  // Cargar tareas al montar el componente
+  useEffect(() => {
+    loadTasks()
+  }, [])
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true)
+      const fetchedTasks = await getTasks()
+      setTasks(fetchedTasks)
+    } catch (error) {
+      console.error("Error cargando tareas:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addTask = async () => {
     if (newTask.trim() === "") return
 
-    const task: Task = {
-      id: Date.now(),
-      text: newTask,
-      completed: false,
+    try {
+      await createTask(newTask)
+      // Recargar todas las tareas para mantener consistencia
+      await loadTasks()
+      setNewTask("")
+    } catch (error) {
+      console.error("Error agregando tarea:", error)
     }
-
-    setTasks([...tasks, task])
-    setNewTask("")
   }
 
-  const deleteTask = (id: number) => {
-    setTasks(tasks.filter((task) => task.id !== id))
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteTask(id)
+      await loadTasks()
+    } catch (error) {
+      console.error("Error eliminando tarea:", error)
+    }
   }
 
-  const toggleComplete = (id: number) => {
-    setTasks(tasks.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task)))
+  const toggleComplete = async (task: Task) => {
+    try {
+      await updateTask(task.id, { completed: !task.completed })
+      await loadTasks()
+    } catch (error) {
+      console.error("Error actualizando tarea:", error)
+    }
   }
 
   const startEdit = (task: Task) => {
@@ -45,17 +68,30 @@ export function TodoList() {
     setEditText(task.text)
   }
 
-  const saveEdit = (id: number) => {
+  const saveEdit = async (id: string) => {
     if (editText.trim() === "") return
 
-    setTasks(tasks.map((task) => (task.id === id ? { ...task, text: editText } : task)))
-    setEditingId(null)
-    setEditText("")
+    try {
+      await updateTask(id, { text: editText })
+      setEditingId(null)
+      setEditText("")
+      await loadTasks()
+    } catch (error) {
+      console.error("Error guardando tarea:", error)
+    }
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setEditText("")
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   return (
@@ -102,7 +138,7 @@ export function TodoList() {
                   >
                     <Checkbox
                       checked={task.completed}
-                      onCheckedChange={() => toggleComplete(task.id)}
+                      onCheckedChange={() => toggleComplete(task)}
                       className="flex-shrink-0"
                     />
 
@@ -146,7 +182,7 @@ export function TodoList() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => deleteTask(task.id)}
+                            onClick={() => handleDeleteTask(task.id)}
                             className="h-8 w-8 text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
