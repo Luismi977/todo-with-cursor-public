@@ -14,6 +14,8 @@ export function TodoList() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState("")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
 
   // Cargar tareas al montar el componente
   useEffect(() => {
@@ -23,10 +25,13 @@ export function TodoList() {
   const loadTasks = async () => {
     try {
       setLoading(true)
+      setError(null)
       const fetchedTasks = await getTasks()
       setTasks(fetchedTasks)
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al cargar tareas"
       console.error("Error cargando tareas:", error)
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -36,12 +41,18 @@ export function TodoList() {
     if (newTask.trim() === "") return
 
     try {
+      setIsAdding(true)
+      setError(null)
       await createTask(newTask)
       // Recargar todas las tareas para mantener consistencia
       await loadTasks()
       setNewTask("")
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido al agregar tarea"
       console.error("Error agregando tarea:", error)
+      setError(errorMessage)
+    } finally {
+      setIsAdding(false)
     }
   }
 
@@ -115,13 +126,31 @@ export function TodoList() {
                 placeholder="Escribe una nueva tarea..."
                 value={newTask}
                 onChange={(e) => setNewTask(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addTask()}
+                onKeyDown={(e) => e.key === "Enter" && !isAdding && addTask()}
                 className="flex-1"
+                disabled={isAdding}
               />
-              <Button onClick={addTask} className="px-6">
-                Agregar
+              <Button onClick={addTask} className="px-6" disabled={isAdding}>
+                {isAdding ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Agregando...
+                  </>
+                ) : (
+                  "Agregar"
+                )}
               </Button>
             </div>
+
+            {/* Error Message */}
+            {error && (
+              <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                <p className="text-sm text-destructive font-medium">Error: {error}</p>
+                <p className="text-xs text-destructive/70 mt-1">
+                  Por favor, verifica que las variables de entorno de Firebase estén configuradas en Replit.
+                </p>
+              </div>
+            )}
 
             {/* Task List */}
             <div className="space-y-3">
